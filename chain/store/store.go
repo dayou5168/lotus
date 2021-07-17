@@ -1009,6 +1009,12 @@ func (cs *ChainStore) PutMessage(m storable) (cid.Cid, error) {
 	return PutMessage(cs.chainBlockstore, m)
 }
 
+func (cs *ChainStore) AddChainProtector(protector func(func(cid.Cid) error) error) {
+	if protect, ok := cs.chainBlockstore.(bstore.BlockstoreProtector); ok {
+		protect.AddProtector(protector)
+	}
+}
+
 func (cs *ChainStore) expandTipset(b *types.BlockHeader) (*types.TipSet, error) {
 	// Hold lock for the whole function for now, if it becomes a problem we can
 	// fix pretty easily

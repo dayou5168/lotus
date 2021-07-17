@@ -40,6 +40,14 @@ type BlockstoreGC interface {
 	CollectGarbage() error
 }
 
+// BlockstoreProtector is a trait for compacting/garbage collecting blockstores that allows
+// users to protect references even if they are unreachable from the chain
+type BlockstoreProtector interface {
+	// Protect registers a protector function; the protector is invoked before a compating/gc
+	// operation with a callback to protect live references.
+	AddProtector(func(func(cid.Cid) error) error)
+}
+
 // WrapIDStore wraps the underlying blockstore in an "identity" blockstore.
 // The ID store filters out all puts for blocks with CIDs using the "identity"
 // hash function. It also extracts inlined blocks from CIDs using the identity

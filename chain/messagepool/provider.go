@@ -32,6 +32,7 @@ type Provider interface {
 	LoadTipSet(tsk types.TipSetKey) (*types.TipSet, error)
 	ChainComputeBaseFee(ctx context.Context, ts *types.TipSet) (types.BigInt, error)
 	IsLite() bool
+	AddChainProtector(func(func(cid.Cid) error) error)
 }
 
 type mpoolProvider struct {
@@ -72,6 +73,10 @@ func (mpp *mpoolProvider) PutMessage(m types.ChainMsg) (cid.Cid, error) {
 
 func (mpp *mpoolProvider) PubSubPublish(k string, v []byte) error {
 	return mpp.ps.Publish(k, v) //nolint
+}
+
+func (mpp *mpoolProvider) AddChainProtector(protector func(func(cid.Cid) error) error) {
+	mpp.sm.ChainStore().AddChainProtector(protector)
 }
 
 func (mpp *mpoolProvider) GetActorAfter(addr address.Address, ts *types.TipSet) (*types.Actor, error) {

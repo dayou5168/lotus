@@ -395,6 +395,9 @@ func New(api Provider, ds dtypes.MetadataDS, netName dtypes.NetworkName, j journ
 
 	ctx, cancel := context.WithCancel(context.TODO())
 
+	// register our chain protector
+	api.AddChainProtector(mp.ProtectMessages)
+
 	// load the current tipset and subscribe to head changes _before_ loading local messages
 	mp.curTs = api.SubscribeHeadChanges(func(rev, app []*types.TipSet) error {
 		err := mp.HeadChange(ctx, rev, app)
@@ -424,6 +427,27 @@ func New(api Provider, ds dtypes.MetadataDS, netName dtypes.NetworkName, j journ
 	}()
 
 	return mp, nil
+}
+
+func (mp *MessagePool) ProtectMessages(protect func(cid.Cid) error) error {
+	mp.lk.Lock()
+	defer mp.lk.Unlock()
+
+	for _, mset := range mp.pending {
+		for _, m := range mset.msgs {
+			err := protect(m.Cid())
+			if err != nil {
+				return err
+			}
+
+			err = protect(m.Message.Cid())
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func (mp *MessagePool) resolveToKey(ctx context.Context, addr address.Address) (address.Address, error) {
